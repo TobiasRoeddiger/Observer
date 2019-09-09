@@ -1,0 +1,17 @@
+C:\Users\Tobi\source\repos\Observator\Observator\bin\Debug\Observator.exe.config
+C:\Users\Tobi\source\repos\Observator\Observator\bin\Debug\Observator.exe
+C:\Users\Tobi\source\repos\Observator\Observator\bin\Debug\Observator.pdb
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.csprojAssemblyReference.cache
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\MainWindow.g.cs
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\App.g.cs
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator_MarkupCompile.cache
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator_MarkupCompile.lref
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\MainWindow.baml
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.g.resources
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.Properties.Resources.resources
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.csproj.GenerateResource.cache
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.csproj.CoreCompileInputs.cache
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.exe
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.pdb
+C:\Users\Tobi\source\repos\Observator\Observator\bin\Debug\EventHook.dll
+C:\Users\Tobi\source\repos\Observator\Observator\obj\Debug\Observator.csproj.CopyComplete
