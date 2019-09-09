@@ -23,6 +23,9 @@ namespace Observator
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        private string filePath = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -51,10 +54,22 @@ namespace Observator
                 mouseWatcher.Start();
                 mouseWatcher.OnMouseInput += (s, e) =>
                 {
+                    if (e.Message.ToString() == "WM_LBUTTONDOWN")
+                    {
+                        TakeScreenshot();
+                        // left mouse down
+                    }
+                    else if (e.Message.ToString() == "WM_RBUTTONDOWN")
+                    {
+                        // right mouse down
+                    }
+
                     Dispatcher.Invoke(() =>
                     {
                         this.MouseEvents.Content = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
                     });
+
+                    
                 };
 
                 var clipboardWatcher = eventHookFactory.GetClipboardWatcher();
@@ -93,34 +108,40 @@ namespace Observator
             {
                 System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                 LocationEntry.Text = dialog.SelectedPath;
+                filePath = dialog.SelectedPath;
             }
         }
 
         private void TakeScreenshot()
         {
-            if (this.LocationEntry.Text != "")
+            Dispatcher.InvokeAsync(() =>
             {
-
-            }
-
-            double screenLeft = 0;
-            double screenTop = 0;
-            double screenWidth = SystemParameters.PrimaryScreenWidth * 1.5;
-            double screenHeight = SystemParameters.PrimaryScreenHeight * 1.5;
-
-            using (Bitmap bmp = new Bitmap((int)screenWidth,
-                (int)screenHeight))
-            {
-                using (Graphics g = Graphics.FromImage(bmp))
+                if (filePath == "" || filePath == null)
                 {
-                    String filename = "ScreenCapture-" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".png";
-                    Opacity = .0;
-                    g.CopyFromScreen((int)screenLeft, (int)screenTop, 0, 0, bmp.Size);
-                    bmp.Save(LocationEntry.Text + "\\" + filename);
-                    Opacity = 1;
+                    return;
                 }
 
-            }
+                double screenLeft = 0;
+                double screenTop = 0;
+                double screenWidth = SystemParameters.PrimaryScreenWidth * 1.5;
+                double screenHeight = SystemParameters.PrimaryScreenHeight * 1.5;
+
+                using (Bitmap bmp = new Bitmap((int)screenWidth,
+                    (int)screenHeight))
+                {
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        String filename = "ScreenCapture-" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".png";
+                        Opacity = .0;
+                        g.CopyFromScreen((int)screenLeft, (int)screenTop, 0, 0, bmp.Size);
+                        bmp.Save(LocationEntry.Text + "\\" + filename);
+                        Opacity = 1;
+                    }
+
+                }
+
+            });
+            
         }
 
         protected override void OnClosing(CancelEventArgs e)
