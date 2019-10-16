@@ -1,20 +1,10 @@
 ﻿using EventHook;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Windows.Forms;
+using Hardcodet.Wpf.TaskbarNotification;
 
 namespace Observator
 {
@@ -23,8 +13,9 @@ namespace Observator
     /// </summary>
     public partial class MainWindow : Window
     {
-
         private string filePath = "";
+        private Recorder recorder;
+        private bool isRecording = false;
 
         public MainWindow()
         {
@@ -32,7 +23,10 @@ namespace Observator
 
             ConfigureEventHandlers();
 
-            this.SelectLocationButton.Click += SelectLocationButton_Click;
+            SelectLocationButton.Click += SelectLocationButton_Click;
+            RecordStartButton.Click += RecordStartButton_Click;
+            RecordStopButton.Click += RecordStopButton_Click;
+            TrayRecordButton.Click += TrayRecordButton_Click;
         }
 
         void ConfigureEventHandlers()
@@ -45,7 +39,7 @@ namespace Observator
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        this.KeyboardEvents.Content = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
+                        KeyboardEvents.Content = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
                     });
                    
                 };
@@ -56,7 +50,7 @@ namespace Observator
                 {
                     if (e.Message.ToString() == "WM_LBUTTONDOWN")
                     {
-                        TakeScreenshot();
+                        //TakeScreenshot();
                         // left mouse down
                     }
                     else if (e.Message.ToString() == "WM_RBUTTONDOWN")
@@ -66,7 +60,7 @@ namespace Observator
 
                     Dispatcher.Invoke(() =>
                     {
-                        this.MouseEvents.Content = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
+                        MouseEvents.Content = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
                     });
 
                     
@@ -86,7 +80,7 @@ namespace Observator
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        this.ApplicationEvents.Content = string.Format("Application window of '{0}' with the title '{1}' was {2}", e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
+                        ApplicationEvents.Content = string.Format("Application window of '{0}' with the title '{1}' was {2}", e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
                     });
                 };
 
@@ -96,7 +90,7 @@ namespace Observator
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        this.PrinterEvents.Content = string.Format("Printer '{0}' currently printing {1} pages.", e.EventData.PrinterName, e.EventData.Pages);
+                        PrinterEvents.Content = string.Format("Printer '{0}' currently printing {1} pages.", e.EventData.PrinterName, e.EventData.Pages);
                     });
                 };
             }
@@ -106,9 +100,70 @@ namespace Observator
         {
             using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
             {
-                System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+                DialogResult result = dialog.ShowDialog();
                 LocationEntry.Text = dialog.SelectedPath;
                 filePath = dialog.SelectedPath;
+            }
+        }
+
+        private void RecordStartButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartRecording();
+        }
+
+        private void RecordStopButton_Click(object sender, RoutedEventArgs e)
+        {
+            StopRecording();
+        }
+
+        private void TrayRecordButton_Click(object sender, EventArgs e)
+        {
+            if (TrayRecordButton.Content.ToString() == "Start")
+            {
+                StartRecording();
+            } else
+            {
+                StopRecording();
+            }
+        }
+
+        private void StartRecording()
+        {
+            if (filePath == "" || filePath == null)
+            {
+                NotifyIcon.ShowBalloonTip("No Path Found", "Please specify file path!", BalloonIcon.Info);
+                return;
+            }
+
+            NotifyIcon.HideBalloonTip();
+            isRecording = true;
+
+            string filename = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".avi";
+            recorder = new Recorder(new RecorderParams(filename, 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+
+            UpdateRecordButtons();
+        }
+
+        private void StopRecording()
+        {
+            recorder.Dispose();
+            isRecording = false;
+
+            UpdateRecordButtons();
+        }
+
+        private void UpdateRecordButtons()
+        {
+            if (isRecording)
+            {
+                TrayRecordButton.Content = "Stop";
+                RecordStartButton.IsEnabled = false;
+                RecordStopButton.IsEnabled = true;
+            } else
+            {
+                TrayRecordButton.Content = "Start";
+                RecordStartButton.IsEnabled = true;
+                RecordStopButton.IsEnabled = false;
             }
         }
 
