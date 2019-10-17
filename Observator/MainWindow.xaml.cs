@@ -14,9 +14,9 @@ namespace Observator
     public partial class MainWindow : Window
     {
         private string filePath = "";
+        private string videoName = "";
         private Recorder recorder;
         private bool isRecording = false;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -138,8 +138,8 @@ namespace Observator
             NotifyIcon.HideBalloonTip();
             isRecording = true;
 
-            string filename = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".avi";
-            recorder = new Recorder(new RecorderParams(filename, 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+            videoName = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss");
+            recorder = new Recorder(new RecorderParams(videoName + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
 
             UpdateRecordButtons();
         }
@@ -149,7 +149,11 @@ namespace Observator
             recorder.Dispose();
             isRecording = false;
 
-            UpdateRecordButtons();
+            Dispatcher.Invoke(() =>
+            {
+                UpdateRecordButtons();
+            });
+            new VideoConverter(videoName, ".avi", ".mkv");
         }
 
         private void UpdateRecordButtons()
