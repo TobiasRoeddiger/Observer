@@ -1,5 +1,6 @@
 ﻿using EventHook;
 using System;
+using System.IO;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
@@ -15,8 +16,13 @@ namespace Observator
     {
         private string filePath = "";
         private string videoName = "";
+        private string timestamp = "";
         private Recorder recorder;
         private bool isRecording = false;
+        private StopWatch stopWatch;
+        private int keyboardEventCounter = 0;
+        private int mouseEventCounter = 0;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -37,17 +43,36 @@ namespace Observator
                 keyboardWatcher.Start();
                 keyboardWatcher.OnKeyInput += (s, e) =>
                 {
+                    string eventString = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
                     Dispatcher.Invoke(() =>
                     {
-                        KeyboardEvents.Content = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
+                        KeyboardEvents.Content = eventString;
                     });
-                   
+
+                    if (isRecording)
+                    {
+                        WriteEvent(eventString, "Keyboard");
+                    }
                 };
 
                 var mouseWatcher = eventHookFactory.GetMouseWatcher();
                 mouseWatcher.Start();
                 mouseWatcher.OnMouseInput += (s, e) =>
                 {
+                    string eventString = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
+                    Dispatcher.Invoke(() =>
+                    {
+                        MouseEvents.Content = eventString;
+                    });
+
+                    if (isRecording)
+                    {
+                        if (e.Message.ToString() == "WM_LBUTTONDOWN" || e.Message.ToString() == "WM_RBUTTONDOWN")
+                        {
+                            WriteEvent(eventString, "Mouse");
+                        }
+                    }
+
                     if (e.Message.ToString() == "WM_LBUTTONDOWN")
                     {
                         //TakeScreenshot();
@@ -57,13 +82,6 @@ namespace Observator
                     {
                         // right mouse down
                     }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        MouseEvents.Content = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
-                    });
-
-                    
                 };
 
                 var clipboardWatcher = eventHookFactory.GetClipboardWatcher();
@@ -94,6 +112,52 @@ namespace Observator
                     });
                 };
             }
+        }
+
+        private void WriteEvent(string eventString, string name)
+        {
+            int eventCounter;
+            if (name == "Keyboard")
+            {
+                eventCounter = ++keyboardEventCounter;
+            } 
+            else if (name == "Mouse")
+            {
+                eventCounter = ++mouseEventCounter;
+            }
+            else
+            {
+                return;
+            }
+
+            TimeSpan timeSpan = stopWatch.getTimeDifference();
+            string time = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+            string nextTime = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds + 1, timeSpan.Milliseconds);
+
+            string[] lines = { eventCounter.ToString(), time + " --> " + nextTime, eventString, "" };
+            File.AppendAllLines(filePath + "\\" + name + timestamp + ".srt", lines);
+        }
+
+        private string ParseTime(int hours, int minutes, int seconds, int milliseconds)
+        {
+            string hourString = hours > 9 ? hours.ToString() : "0" + hours;
+            string minuteString = minutes > 9 ? minutes.ToString() : "0" + minutes;
+            string secondString = seconds > 9 ? seconds.ToString() : "0" + seconds;
+            string millisecondString;
+            if (milliseconds > 99)
+            {
+                millisecondString = milliseconds.ToString();
+            }
+            else if (milliseconds > 9)
+            {
+                millisecondString = "0" + milliseconds;
+            }
+            else
+            {
+                millisecondString = "00" + milliseconds;
+            }
+
+            return hourString + ":" + minuteString + ":" + secondString + "," + millisecondString;
         }
 
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
@@ -137,8 +201,12 @@ namespace Observator
 
             NotifyIcon.HideBalloonTip();
             isRecording = true;
+            stopWatch = new StopWatch();
+            keyboardEventCounter = 0;
+            mouseEventCounter = 0;
+            timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
 
-            videoName = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss");
+            videoName = filePath + "\\Record" + timestamp;
             recorder = new Recorder(new RecorderParams(videoName + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
 
             UpdateRecordButtons();
@@ -148,6 +216,8 @@ namespace Observator
         {
             recorder.Dispose();
             isRecording = false;
+            stopWatch = null;
+            timestamp = "";
 
             Dispatcher.Invoke(() =>
             {
