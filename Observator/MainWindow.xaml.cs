@@ -15,7 +15,6 @@ namespace Observator
     public partial class MainWindow : Window
     {
         private string filePath = "";
-        private string videoName = "";
         private string timestamp = "";
         private Recorder recorder;
         private bool isRecording = false;
@@ -206,8 +205,9 @@ namespace Observator
             mouseEventCounter = 0;
             timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
 
-            videoName = filePath + "\\Record" + timestamp;
-            recorder = new Recorder(new RecorderParams(videoName + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+            File.Create(filePath + "\\Keyboard" + timestamp + ".srt");
+            File.Create(filePath + "\\Mouse" + timestamp + ".srt");
+            recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
 
             UpdateRecordButtons();
         }
@@ -217,13 +217,15 @@ namespace Observator
             recorder.Dispose();
             isRecording = false;
             stopWatch = null;
-            timestamp = "";
 
             Dispatcher.Invoke(() =>
             {
                 UpdateRecordButtons();
             });
-            new VideoConverter(videoName, ".avi", ".mkv");
+
+            string[] subtitleFiles = { filePath + "\\Keyboard" + timestamp, filePath + "\\Mouse" + timestamp };
+            _ = new VideoConverter(filePath + "\\Record" + timestamp, subtitleFiles);
+            timestamp = "";
         }
 
         private void UpdateRecordButtons()
