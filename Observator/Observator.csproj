@@ -70,7 +70,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="EventFileWriter.cs" />
+    <Compile Include="EventWriter.cs" />
     <Compile Include="Recorder.cs" />
     <Compile Include="RecorderParams.cs" />
     <Compile Include="StopWatch.cs" />

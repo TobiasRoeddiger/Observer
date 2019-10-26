@@ -14,13 +14,15 @@ namespace Observator
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string filePath = "";
-        private string timestamp = "";
-        private Recorder recorder;
-        private bool isRecording = false;
-        private StopWatch stopWatch;
-        private int keyboardEventCounter = 0;
-        private int mouseEventCounter = 0;
+        string filePath = "";
+        string timestamp = "";
+        bool isRecording = false;
+        int[] mousePosition = new int[2] { 0, 0 };
+        int minDistance = 20;
+
+        Recorder recorder;
+        VideoConverter converter;
+        EventWriter eventWriter;
 
         public MainWindow()
         {
@@ -50,7 +52,7 @@ namespace Observator
 
                     if (isRecording)
                     {
-                        WriteEvent(eventString, "Keyboard");
+                        eventWriter.WriteEvent(EventWriter.InputEvent.Keyboard, eventString);
                     }
                 };
 
@@ -68,18 +70,18 @@ namespace Observator
                     {
                         if (e.Message.ToString() == "WM_LBUTTONDOWN" || e.Message.ToString() == "WM_RBUTTONDOWN")
                         {
-                            WriteEvent(eventString, "Mouse");
+                            eventWriter.WriteEvent(EventWriter.InputEvent.MouseClick, eventString);
+                        } else
+                        {
+                            if ((mousePosition[0] == 0 && mousePosition[1] == 0) || 
+                                Math.Abs(e.Point.x - mousePosition[0]) >= minDistance ||
+                                Math.Abs(e.Point.y - mousePosition[1]) >= minDistance)
+                            {
+                                mousePosition[0] = e.Point.x;
+                                mousePosition[1] = e.Point.y;
+                                eventWriter.WriteEvent(EventWriter.InputEvent.MouseMove, eventString);
+                            }
                         }
-                    }
-
-                    if (e.Message.ToString() == "WM_LBUTTONDOWN")
-                    {
-                        //TakeScreenshot();
-                        // left mouse down
-                    }
-                    else if (e.Message.ToString() == "WM_RBUTTONDOWN")
-                    {
-                        // right mouse down
                     }
                 };
 
@@ -87,81 +89,48 @@ namespace Observator
                 clipboardWatcher.Start();
                 clipboardWatcher.OnClipboardModified += (s, e) =>
                 {
-                    Console.WriteLine(e.Data);
+                    eventWriter.WriteEvent(EventWriter.InputEvent.Clipboard, e.Data.ToString());
                 };
-
 
                 var applicationWatcher = eventHookFactory.GetApplicationWatcher();
                 applicationWatcher.Start();
                 applicationWatcher.OnApplicationWindowChange += (s, e) =>
                 {
+                    string eventString = string.Format("Application window of '{0}' with the title '{1}' was {2}", 
+                        e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
                     Dispatcher.Invoke(() =>
                     {
-                        ApplicationEvents.Content = string.Format("Application window of '{0}' with the title '{1}' was {2}", e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
+                        ApplicationEvents.Content = eventString;
                     });
+
+                    if (isRecording)
+                    {
+                        eventWriter.WriteEvent(EventWriter.InputEvent.Application, eventString);
+                    }
                 };
 
                 var printWatcher = eventHookFactory.GetPrintWatcher();
                 printWatcher.Start();
                 printWatcher.OnPrintEvent += (s, e) =>
                 {
+                    string eventString = string.Format("Printer '{0}' currently printing {1} pages.",
+                        e.EventData.PrinterName, e.EventData.Pages);
                     Dispatcher.Invoke(() =>
                     {
-                        PrinterEvents.Content = string.Format("Printer '{0}' currently printing {1} pages.", e.EventData.PrinterName, e.EventData.Pages);
+                        PrinterEvents.Content = eventString;
                     });
+
+                    if (isRecording)
+                    {
+                        eventWriter.WriteEvent(EventWriter.InputEvent.Print, eventString);
+                    }
                 };
             }
         }
 
-        private void WriteEvent(string eventString, string name)
-        {
-            int eventCounter;
-            if (name == "Keyboard")
-            {
-                eventCounter = ++keyboardEventCounter;
-            } 
-            else if (name == "Mouse")
-            {
-                eventCounter = ++mouseEventCounter;
-            }
-            else
-            {
-                return;
-            }
-
-            TimeSpan timeSpan = stopWatch.getTimeDifference();
-            string time = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
-            string nextTime = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds + 1, timeSpan.Milliseconds);
-
-            string[] lines = { eventCounter.ToString(), time + " --> " + nextTime, eventString, "" };
-            File.AppendAllLines(filePath + "\\" + name + timestamp + ".srt", lines);
-        }
-
-        private string ParseTime(int hours, int minutes, int seconds, int milliseconds)
-        {
-            string hourString = hours > 9 ? hours.ToString() : "0" + hours;
-            string minuteString = minutes > 9 ? minutes.ToString() : "0" + minutes;
-            string secondString = seconds > 9 ? seconds.ToString() : "0" + seconds;
-            string millisecondString;
-            if (milliseconds > 99)
-            {
-                millisecondString = milliseconds.ToString();
-            }
-            else if (milliseconds > 9)
-            {
-                millisecondString = "0" + milliseconds;
-            }
-            else
-            {
-                millisecondString = "00" + milliseconds;
-            }
-
-            return hourString + ":" + minuteString + ":" + secondString + "," + millisecondString;
-        }
-
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
         {
-            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
+            using (var dialog = new FolderBrowserDialog())
             {
                 DialogResult result = dialog.ShowDialog();
                 LocationEntry.Text = dialog.SelectedPath;
@@ -184,7 +153,8 @@ namespace Observator
             if (TrayRecordButton.Content.ToString() == "Start")
             {
                 StartRecording();
-            } else
+            }
+            else
             {
                 StopRecording();
             }
@@ -200,13 +170,9 @@ namespace Observator
 
             NotifyIcon.HideBalloonTip();
             isRecording = true;
-            stopWatch = new StopWatch();
-            keyboardEventCounter = 0;
-            mouseEventCounter = 0;
             timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
+            eventWriter = new EventWriter(filePath, timestamp);
 
-            File.Create(filePath + "\\Keyboard" + timestamp + ".srt");
-            File.Create(filePath + "\\Mouse" + timestamp + ".srt");
             recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
 
             UpdateRecordButtons();
@@ -215,16 +181,19 @@ namespace Observator
         private void StopRecording()
         {
             recorder.Dispose();
+            recorder = null;
             isRecording = false;
-            stopWatch = null;
+
+            string[] subtitleFiles = eventWriter.GetAllFiles();
+            string[] subtitleNames = eventWriter.GetEventNames();
+            eventWriter = null;
 
             Dispatcher.Invoke(() =>
             {
                 UpdateRecordButtons();
             });
 
-            string[] subtitleFiles = { filePath + "\\Keyboard" + timestamp, filePath + "\\Mouse" + timestamp };
-            _ = new VideoConverter(filePath + "\\Record" + timestamp, subtitleFiles);
+            converter = new VideoConverter(filePath + "\\Record" + timestamp, subtitleFiles, subtitleNames);
             timestamp = "";
         }
 
@@ -279,6 +248,7 @@ namespace Observator
         {
             base.OnClosing(e);
 
+            converter?.Dispose();
             TrackingService.StopListening();
         }
     }
