@@ -17,12 +17,13 @@ namespace Observator
         string filePath = "";
         string timestamp = "";
         bool isRecording = false;
-        int[] mousePosition = new int[2] { 0, 0 };
+        int[] mousePosition;
         int minDistance = 20;
 
         Recorder recorder;
         VideoConverter converter;
         EventWriter eventWriter;
+        WebServer webServer;
 
         public MainWindow()
         {
@@ -169,11 +170,15 @@ namespace Observator
             }
 
             NotifyIcon.HideBalloonTip();
+            mousePosition = new int[] { 0, 0 };
             isRecording = true;
             timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
             eventWriter = new EventWriter(filePath, timestamp);
 
             recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+
+            webServer = new WebServer(new string[] { "http://localhost:8080/url/" }, eventWriter);
+            webServer.Run();
 
             UpdateRecordButtons();
         }
@@ -183,6 +188,7 @@ namespace Observator
             recorder.Dispose();
             recorder = null;
             isRecording = false;
+            webServer.Stop();
 
             string[] subtitleFiles = eventWriter.GetAllFiles();
             string[] subtitleNames = eventWriter.GetEventNames();
@@ -248,7 +254,8 @@ namespace Observator
         {
             base.OnClosing(e);
 
-            converter?.Dispose();
+            converter?.Close();
+            eventWriter?.Close();
             TrackingService.StopListening();
         }
     }

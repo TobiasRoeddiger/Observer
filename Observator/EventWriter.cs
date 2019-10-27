@@ -6,8 +6,8 @@ namespace Observator
 {
     class EventWriter
     {
-        public enum InputEvent { Keyboard, MouseClick, MouseMove, Clipboard, Application, Print };
-        const int NumEvents = 6;
+        public enum InputEvent { Keyboard, MouseClick, MouseMove, Clipboard, Application, Print, Url };
+        const int NumEvents = 7;
 
         StopWatch stopWatch;
         string filePath;
@@ -48,6 +48,11 @@ namespace Observator
                 files[i] = filePath + "\\" + names[i] + timestamp;
             }
             return files;
+        }
+
+        public void Close()
+        {
+            // TODO
         }
 
         private void CreateFiles()

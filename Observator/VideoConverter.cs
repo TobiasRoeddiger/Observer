@@ -27,7 +27,7 @@ namespace Observator
             convertThread.Start();
         }
 
-        public void Dispose()
+        public void Close()
         {
             convertThread.Join();
         }
