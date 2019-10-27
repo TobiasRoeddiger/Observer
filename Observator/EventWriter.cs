@@ -50,11 +50,6 @@ namespace Observator
             return files;
         }
 
-        public void Close()
-        {
-            // TODO
-        }
-
         private void CreateFiles()
         {
             foreach (string name in GetEventNames())

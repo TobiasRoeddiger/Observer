@@ -255,7 +255,7 @@ namespace Observator
             base.OnClosing(e);
 
             converter?.Close();
-            eventWriter?.Close();
+            webServer?.Stop();
             TrackingService.StopListening();
         }
     }

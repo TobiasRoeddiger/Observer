@@ -49,6 +49,7 @@ namespace Observator
                         ThreadPool.QueueUserWorkItem(c =>
                         {
                             var context = c as HttpListenerContext;
+
                             if (context == null)
                             {
                                 return;
@@ -61,9 +62,28 @@ namespace Observator
                             {
                                 input = reader.ReadToEnd();
                             }
-                            Console.WriteLine("json input:" + input);
                             var jsonObj = JObject.Parse(input);
                             eventWriter.WriteEvent(EventWriter.InputEvent.Url, (string)jsonObj["url"]);
+
+                            try
+                            {
+                                var response = "OK";
+                                var buf = Encoding.UTF8.GetBytes(response);
+                                context.Response.ContentLength64 = buf.Length;
+                                context.Response.OutputStream.Write(buf, 0, buf.Length);
+                            }
+                            catch
+                            {
+                                // ignored
+                            }
+                            finally
+                            {
+                                // always close the stream
+                                if (context != null)
+                                {
+                                    context.Response.OutputStream.Close();
+                                }
+                            }
                         }, listener.GetContext());
                     }
                 }
