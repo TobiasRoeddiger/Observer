@@ -1,8 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -35,69 +33,59 @@ namespace Observator
             }
 
             listener.Start();
-        }
 
-        public void Run()
-        {
-            ThreadPool.QueueUserWorkItem(o =>
+            Task.Factory.StartNew(async () =>
             {
-                Console.WriteLine("Webserver running...");
+                while (true) await Listen(listener);
+            }, TaskCreationOptions.LongRunning);
+        }
+        private async Task Listen(HttpListener l)
+        {
+            try
+            {
+                var context = await l.GetContextAsync();
+                var request = context.Request;
+
+                string input;
+                using (var reader = new StreamReader(request.InputStream))
+                {
+                    input = reader.ReadToEnd();
+                }
+                var jsonObj = JObject.Parse(input);
+                eventWriter.WriteEvent(EventWriter.InputEvent.Url, (string)jsonObj["url"]);
+
                 try
                 {
-                    while (listener.IsListening)
-                    {
-                        ThreadPool.QueueUserWorkItem(c =>
-                        {
-                            var context = c as HttpListenerContext;
-
-                            if (context == null)
-                            {
-                                return;
-                            }
-
-                            var request = context.Request;
-
-                            string input;
-                            using (var reader = new StreamReader(request.InputStream))
-                            {
-                                input = reader.ReadToEnd();
-                            }
-                            var jsonObj = JObject.Parse(input);
-                            eventWriter.WriteEvent(EventWriter.InputEvent.Url, (string)jsonObj["url"]);
-
-                            try
-                            {
-                                var response = "OK";
-                                var buf = Encoding.UTF8.GetBytes(response);
-                                context.Response.ContentLength64 = buf.Length;
-                                context.Response.OutputStream.Write(buf, 0, buf.Length);
-                            }
-                            catch
-                            {
-                                // ignored
-                            }
-                            finally
-                            {
-                                // always close the stream
-                                if (context != null)
-                                {
-                                    context.Response.OutputStream.Close();
-                                }
-                            }
-                        }, listener.GetContext());
-                    }
+                    var response = "OK";
+                    var buf = Encoding.UTF8.GetBytes(response);
+                    context.Response.ContentLength64 = buf.Length;
+                    context.Response.OutputStream.Write(buf, 0, buf.Length);
                 }
-                catch (Exception ex)
+                catch
                 {
                     // ignored
                 }
-            });
+                finally
+                {
+                    // always close the stream
+                    if (context != null)
+                    {
+                        context.Response.OutputStream.Close();
+                    }
+                }
+            }
+            catch (HttpListenerException)
+            {
+                
+            }
         }
 
         public void Stop()
         {
-            listener.Stop();
-            listener.Close();
+            if (listener.IsListening)
+            {
+                listener.Stop();
+            }
         }
     }
 }

@@ -50,6 +50,18 @@ namespace Observator
             return files;
         }
 
+        public void DeleteAllFiles()
+        {
+            string[] names = GetEventNames();
+            foreach (string name in names)
+            {
+                if (File.Exists(filePath + "\\" + name + timestamp + ".srt"))
+                {
+                    File.Delete(filePath + "\\" + name + timestamp + ".srt");
+                }
+            }
+        }
+
         private void CreateFiles()
         {
             foreach (string name in GetEventNames())
