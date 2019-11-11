@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:Observator"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary Source="TaskbarIcon.xaml" />         
     </Application.Resources>
 </Application>
