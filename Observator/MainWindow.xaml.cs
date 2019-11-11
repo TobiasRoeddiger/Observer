@@ -194,7 +194,7 @@ namespace Observator
                 MessageBoxResult result =
                   System.Windows.MessageBox.Show(
                     msg,
-                    "Observator",
+                    "Observer",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -209,6 +209,10 @@ namespace Observator
                 CleanUp();
                 System.Windows.Application.Current.Shutdown();
             }
+        }
+        private void ScaleFactor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            
         }
 
         private void StartRecording()
@@ -281,10 +285,12 @@ namespace Observator
             if (isRecording)
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/stop.png", UriKind.Relative));
+                ScaleFactorText.IsEnabled = false;
                 MinDistanceText.IsEnabled = false;
             } else
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
+                ScaleFactorText.IsEnabled = true;
                 MinDistanceText.IsEnabled = true;
             }
         }
@@ -300,8 +306,8 @@ namespace Observator
 
                 double screenLeft = 0;
                 double screenTop = 0;
-                double screenWidth = Screen.PrimaryScreen.Bounds.Width;
-                double screenHeight = Screen.PrimaryScreen.Bounds.Height;
+                double screenWidth = SystemParameters.PrimaryScreenWidth * 1.5;
+                double screenHeight = SystemParameters.PrimaryScreenHeight * 1.5;
 
                 using (Bitmap bmp = new Bitmap((int)screenWidth,
                     (int)screenHeight))
