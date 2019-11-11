@@ -1,0 +1,25 @@
+{
+  "name": "Observator",
+  "version": "1.0",
+  "description": "Tracks Url changes",
+  "permissions": ["tabs", "http://localhost/*"],
+  "background": {
+    "scripts": ["background_script.js"],
+    "persistent": false
+  },
+  "page_action": {
+    "default_icon": {
+      "16": "images/teco16.png",
+      "32": "images/teco32.png",
+      "48": "images/teco48.png",
+      "128": "images/teco128.png"
+    }
+  },
+  "icons": {
+    "16": "images/teco16.png",
+    "32": "images/teco32.png",
+    "48": "images/teco48.png",
+    "128": "images/teco128.png"
+  },
+  "manifest_version": 2
+}

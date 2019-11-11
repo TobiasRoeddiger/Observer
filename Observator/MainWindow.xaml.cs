@@ -1,10 +1,13 @@
 ﻿using EventHook;
 using System;
+using System.IO;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using Hardcodet.Wpf.TaskbarNotification;
+using System.Windows.Media.Imaging;
+using System.Windows.Controls;
 
 namespace Observator
 {
@@ -13,92 +16,131 @@ namespace Observator
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string filePath = "";
-        private Recorder recorder;
-        private bool isRecording = false;
+        string filePath = "./Output";
+        string timestamp = "";
+        bool isRecording = false;
+        int[] mousePosition;
+        int minDistance = 20;
+
+        Recorder recorder;
+        VideoConverter converter;
+        EventWriter eventWriter;
+        WebServer webServer;
+
+        private readonly EventHookFactory eventHookFactory = new EventHookFactory();
+        private readonly KeyboardWatcher keyboardWatcher;
+        private readonly ApplicationWatcher applicationWatcher;
+        private readonly ClipboardWatcher clipboardWatcher;
+        private readonly MouseWatcher mouseWatcher;
+        private readonly PrintWatcher printWatcher;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            ConfigureEventHandlers();
-
             SelectLocationButton.Click += SelectLocationButton_Click;
-            RecordStartButton.Click += RecordStartButton_Click;
-            RecordStopButton.Click += RecordStopButton_Click;
             TrayRecordButton.Click += TrayRecordButton_Click;
-        }
+            SettingsButton.Click += SettingsButton_Click;
+            ClosingButton.Click += ClosingButton_Click;
+            LocationEntry.Text = filePath;
 
-        void ConfigureEventHandlers()
-        {
-            using (var eventHookFactory = new EventHookFactory())
+            Hide();
+
+            #region Configure Event Handlers
+
+            keyboardWatcher = eventHookFactory.GetKeyboardWatcher();
+            keyboardWatcher.Start();
+            keyboardWatcher.OnKeyInput += (s, e) =>
             {
-                var keyboardWatcher = eventHookFactory.GetKeyboardWatcher();
-                keyboardWatcher.Start();
-                keyboardWatcher.OnKeyInput += (s, e) =>
+                string eventString = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        KeyboardEvents.Content = string.Format("Key {0} event of key {1}", e.KeyData.EventType, e.KeyData.Keyname);
-                    });
-                   
-                };
+                    KeyboardEvents.Content = eventString;
+                }));
 
-                var mouseWatcher = eventHookFactory.GetMouseWatcher();
-                mouseWatcher.Start();
-                mouseWatcher.OnMouseInput += (s, e) =>
+                if (isRecording)
                 {
-                    if (e.Message.ToString() == "WM_LBUTTONDOWN")
+                    eventWriter.WriteEvent(EventWriter.InputEvent.Keyboard, eventString);
+                }
+            };
+
+            mouseWatcher = eventHookFactory.GetMouseWatcher();
+            mouseWatcher.Start();
+            mouseWatcher.OnMouseInput += (s, e) =>
+            {
+                string eventString = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    MouseEvents.Content = eventString;
+                }));
+
+                if (isRecording)
+                {
+                    if (e.Message.ToString() == "WM_LBUTTONDOWN" || e.Message.ToString() == "WM_RBUTTONDOWN")
                     {
-                        //TakeScreenshot();
-                        // left mouse down
+                        eventWriter.WriteEvent(EventWriter.InputEvent.MouseClick, eventString);
                     }
-                    else if (e.Message.ToString() == "WM_RBUTTONDOWN")
+                    else
                     {
-                        // right mouse down
+                        if ((mousePosition[0] == 0 && mousePosition[1] == 0) ||
+                            Math.Abs(e.Point.x - mousePosition[0]) >= minDistance ||
+                            Math.Abs(e.Point.y - mousePosition[1]) >= minDistance)
+                        {
+                            mousePosition[0] = e.Point.x;
+                            mousePosition[1] = e.Point.y;
+                            eventWriter.WriteEvent(EventWriter.InputEvent.MouseMove, eventString);
+                        }
                     }
+                }
+            };
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        MouseEvents.Content = string.Format("Mouse event {0} at point {1},{2}", e.Message.ToString(), e.Point.x, e.Point.y);
-                    });
+            clipboardWatcher = eventHookFactory.GetClipboardWatcher();
+            clipboardWatcher.Start();
+            clipboardWatcher.OnClipboardModified += (s, e) =>
+            {
+                eventWriter.WriteEvent(EventWriter.InputEvent.Clipboard, e.Data.ToString());
+            };
 
-                    
-                };
-
-                var clipboardWatcher = eventHookFactory.GetClipboardWatcher();
-                clipboardWatcher.Start();
-                clipboardWatcher.OnClipboardModified += (s, e) =>
+            applicationWatcher = eventHookFactory.GetApplicationWatcher();
+            applicationWatcher.Start();
+            applicationWatcher.OnApplicationWindowChange += (s, e) =>
+            {
+                string eventString = string.Format("Application window of '{0}' with the title '{1}' was {2}",
+                    e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
+                Dispatcher.Invoke(() =>
                 {
-                    Console.WriteLine(e.Data);
-                };
+                    ApplicationEvents.Content = eventString;
+                });
 
-
-                var applicationWatcher = eventHookFactory.GetApplicationWatcher();
-                applicationWatcher.Start();
-                applicationWatcher.OnApplicationWindowChange += (s, e) =>
+                if (isRecording)
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        ApplicationEvents.Content = string.Format("Application window of '{0}' with the title '{1}' was {2}", e.ApplicationData.AppName, e.ApplicationData.AppTitle, e.Event);
-                    });
-                };
+                    eventWriter.WriteEvent(EventWriter.InputEvent.Application, eventString);
+                }
+            };
 
-                var printWatcher = eventHookFactory.GetPrintWatcher();
-                printWatcher.Start();
-                printWatcher.OnPrintEvent += (s, e) =>
+            printWatcher = eventHookFactory.GetPrintWatcher();
+            printWatcher.Start();
+            printWatcher.OnPrintEvent += (s, e) =>
+            {
+                string eventString = string.Format("Printer '{0}' currently printing {1} pages.",
+                    e.EventData.PrinterName, e.EventData.Pages);
+                Dispatcher.Invoke(() =>
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        PrinterEvents.Content = string.Format("Printer '{0}' currently printing {1} pages.", e.EventData.PrinterName, e.EventData.Pages);
-                    });
-                };
-            }
+                    PrinterEvents.Content = eventString;
+                });
+
+                if (isRecording)
+                {
+                    eventWriter.WriteEvent(EventWriter.InputEvent.Print, eventString);
+                }
+            };
+
+            #endregion
         }
 
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
         {
-            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
+            using (var dialog = new FolderBrowserDialog())
             {
                 DialogResult result = dialog.ShowDialog();
                 LocationEntry.Text = dialog.SelectedPath;
@@ -118,12 +160,54 @@ namespace Observator
 
         private void TrayRecordButton_Click(object sender, EventArgs e)
         {
-            if (TrayRecordButton.Content.ToString() == "Start")
+            if (!isRecording)
             {
                 StartRecording();
-            } else
+            }
+            else
             {
                 StopRecording();
+            }
+        }
+
+        private void SettingsButton_Click(object sender, EventArgs e)
+        {
+            Show();
+        }
+
+        private void ClosingButton_Click(object sender, EventArgs e)
+        {
+            if (isRecording)
+            {
+                Window window = new Window()
+                {
+                    Visibility = Visibility.Hidden,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    WindowStyle = WindowStyle.None,
+                    ShowInTaskbar = false
+                };
+
+                window.Show();
+
+                string msg = "Video is being recorded. Close without saving?";
+                MessageBoxResult result =
+                  System.Windows.MessageBox.Show(
+                    msg,
+                    "Observator",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                window.Close();
+                if (result == MessageBoxResult.Yes)
+                {
+                    CleanUp();
+                    System.Windows.Application.Current.Shutdown();
+                }
+            } else
+            {
+                CleanUp();
+                System.Windows.Application.Current.Shutdown();
             }
         }
 
@@ -135,35 +219,73 @@ namespace Observator
                 return;
             }
 
+            try
+            {
+                int distance = Int32.Parse(MinDistanceText.Text);
+                if (distance > 0)
+                {
+                    minDistance = distance;
+                } else
+                {
+                    NotifyIcon.ShowBalloonTip("Minimal Distance Invalid", "Please specify a valid distance!", BalloonIcon.Info);
+                    return;
+                }
+            }
+            catch (FormatException)
+            {
+                NotifyIcon.ShowBalloonTip("Minimal Distance Invalid", "Please specify a valid distance!", BalloonIcon.Info);
+                return;
+            }
+
+            if (!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+
             NotifyIcon.HideBalloonTip();
+            mousePosition = new int[] { 0, 0 };
             isRecording = true;
+            timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
+            eventWriter = new EventWriter(filePath, timestamp);
 
-            string filename = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".avi";
-            recorder = new Recorder(new RecorderParams(filename, 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+            recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
 
-            UpdateRecordButtons();
+            webServer = new WebServer(new string[] { "http://localhost:8080/url/" }, eventWriter);
+
+            UpdateRecordingUI();
         }
 
         private void StopRecording()
         {
             recorder.Dispose();
+            recorder = null;
             isRecording = false;
+            webServer.Stop();
+            webServer = null;
 
-            UpdateRecordButtons();
+            string[] subtitleFiles = eventWriter.GetAllFiles();
+            string[] subtitleNames = eventWriter.GetEventNames();
+            eventWriter = null;
+
+            Dispatcher.Invoke(() =>
+            {
+                UpdateRecordingUI();
+            });
+
+            converter = new VideoConverter(filePath + "\\Record" + timestamp, subtitleFiles, subtitleNames);
+            timestamp = "";
         }
 
-        private void UpdateRecordButtons()
+        private void UpdateRecordingUI()
         {
             if (isRecording)
             {
-                TrayRecordButton.Content = "Stop";
-                RecordStartButton.IsEnabled = false;
-                RecordStopButton.IsEnabled = true;
+                RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/stop.png", UriKind.Relative));
+                MinDistanceText.IsEnabled = false;
             } else
             {
-                TrayRecordButton.Content = "Start";
-                RecordStartButton.IsEnabled = true;
-                RecordStopButton.IsEnabled = false;
+                RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
+                MinDistanceText.IsEnabled = true;
             }
         }
 
@@ -178,8 +300,8 @@ namespace Observator
 
                 double screenLeft = 0;
                 double screenTop = 0;
-                double screenWidth = SystemParameters.PrimaryScreenWidth * 1.5;
-                double screenHeight = SystemParameters.PrimaryScreenHeight * 1.5;
+                double screenWidth = Screen.PrimaryScreen.Bounds.Width;
+                double screenHeight = Screen.PrimaryScreen.Bounds.Height;
 
                 using (Bitmap bmp = new Bitmap((int)screenWidth,
                     (int)screenHeight))
@@ -199,11 +321,40 @@ namespace Observator
             
         }
 
+        private void Settings_Closing(object sender, CancelEventArgs e)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+
+        private void CleanUp()
+        {
+            keyboardWatcher.Stop();
+            mouseWatcher.Stop();
+            clipboardWatcher.Stop();
+            applicationWatcher.Stop();
+            printWatcher.Stop();
+            eventHookFactory.Dispose();
+
+            recorder?.Dispose();
+            converter?.Close();
+            webServer?.Stop();
+
+            if (isRecording)
+            {
+                eventWriter.DeleteAllFiles();
+
+                if (File.Exists(filePath + "\\Record" + timestamp + ".avi"))
+                {
+                    File.Delete(filePath + "\\Record" + timestamp + ".avi");
+                }
+            }
+        }
+
         protected override void OnClosing(CancelEventArgs e)
         {
-            base.OnClosing(e);
-
-            TrackingService.StopListening();
+            e.Cancel = true;
+            Hide();
         }
     }
 }
