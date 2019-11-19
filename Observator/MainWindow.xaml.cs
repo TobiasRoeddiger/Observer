@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls;
+using Microsoft.Win32;
 
 namespace Observator
 {
@@ -16,7 +17,8 @@ namespace Observator
     /// </summary>
     public partial class MainWindow : Window
     {
-        string filePath = "./Output";
+        string extensionID = "ebjnhccdoddjldiolpoakneeelhkojie";
+        string filePath;
         string timestamp = "";
         bool isRecording = false;
         int[] mousePosition;
@@ -38,10 +40,19 @@ namespace Observator
         {
             InitializeComponent();
 
+            if (Properties.Settings.Default["filePath"].ToString() != "")
+            {
+                filePath = Properties.Settings.Default["filePath"].ToString();
+            } else
+            {
+                filePath = Path.Combine(Environment.ExpandEnvironmentVariables("%userprofile%"), @"Videos\Observations");
+            }
+
             SelectLocationButton.Click += SelectLocationButton_Click;
             TrayRecordButton.Click += TrayRecordButton_Click;
             SettingsButton.Click += SettingsButton_Click;
             ClosingButton.Click += ClosingButton_Click;
+            QuitButton.Click += QuitButton_Click;
             LocationEntry.Text = filePath;
 
             Hide();
@@ -136,6 +147,37 @@ namespace Observator
             };
 
             #endregion
+
+            try
+            {
+                RegisterChromeExtension();
+            } catch (Exception e)
+            {
+                NotifyIcon.ShowBalloonTip("Exception", e.Message, BalloonIcon.Info);
+            }            
+        }
+
+        private void RegisterChromeExtension()
+        {
+            using (RegistryKey key = 
+                Registry.LocalMachine.OpenSubKey(@"Software\Wow6432Node\Google\Chrome"))
+            {
+                if (key != null)
+                {
+                    using (RegistryKey key64 =
+                        Registry.LocalMachine.CreateSubKey(@"Software\Wow6432Node\Google\Chrome\Extensions"))
+                    {
+                        key64.CreateSubKey(extensionID).SetValue("update_url", "https://clients2.google.com/service/update2/crx");
+                    }
+                } else
+                {
+                    using (RegistryKey key32 =
+                        Registry.LocalMachine.CreateSubKey(@"Software\Google\Chrome\Extensions"))
+                    {
+                        key32.CreateSubKey(extensionID).SetValue("update_url", "https://clients2.google.com/service/update2/crx");
+                    }
+                }
+            }
         }
 
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
@@ -145,6 +187,9 @@ namespace Observator
                 DialogResult result = dialog.ShowDialog();
                 LocationEntry.Text = dialog.SelectedPath;
                 filePath = dialog.SelectedPath;
+
+                Properties.Settings.Default["filePath"] = filePath;
+                Properties.Settings.Default.Save();
             }
         }
 
@@ -177,42 +222,44 @@ namespace Observator
 
         private void ClosingButton_Click(object sender, EventArgs e)
         {
+            NotifyIcon.TrayPopupResolved.IsOpen = false;
+        }
+
+        private void QuitButton_Click(object sender, EventArgs e)
+        {
+            string msg;
             if (isRecording)
             {
-                Window window = new Window()
-                {
-                    Visibility = Visibility.Hidden,
-                    AllowsTransparency = true,
-                    Background = System.Windows.Media.Brushes.Transparent,
-                    WindowStyle = WindowStyle.None,
-                    ShowInTaskbar = false
-                };
-
-                window.Show();
-
-                string msg = "Video is being recorded. Close without saving?";
-                MessageBoxResult result =
-                  System.Windows.MessageBox.Show(
-                    msg,
-                    "Observer",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                window.Close();
-                if (result == MessageBoxResult.Yes)
-                {
-                    CleanUp();
-                    System.Windows.Application.Current.Shutdown();
-                }
+                msg = "Video is being recorded. Close without saving?";
             } else
+            {
+                msg = "Are you sure to close the app?";
+            }
+
+            Window window = new Window()
+            {
+                Visibility = Visibility.Hidden,
+                AllowsTransparency = true,
+                Background = System.Windows.Media.Brushes.Transparent,
+                WindowStyle = WindowStyle.None,
+                ShowInTaskbar = false
+            };
+
+            window.Show();
+
+            MessageBoxResult result =
+              System.Windows.MessageBox.Show(
+                msg,
+                "Observator",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            window.Close();
+            if (result == MessageBoxResult.Yes)
             {
                 CleanUp();
                 System.Windows.Application.Current.Shutdown();
             }
-        }
-        private void ScaleFactor_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            
         }
 
         private void StartRecording()
@@ -285,12 +332,10 @@ namespace Observator
             if (isRecording)
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/stop.png", UriKind.Relative));
-                ScaleFactorText.IsEnabled = false;
                 MinDistanceText.IsEnabled = false;
             } else
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
-                ScaleFactorText.IsEnabled = true;
                 MinDistanceText.IsEnabled = true;
             }
         }
