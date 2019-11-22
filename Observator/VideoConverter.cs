@@ -59,10 +59,10 @@ namespace Observator
 
         private string generateCommmand()
         {
-            string command = "-i " + videoName + ".avi ";
+            string command = "-i \"" + videoName + ".avi\" ";
             foreach (string file in subtitleFiles)
             {
-                command += "-i " + file + ".srt ";
+                command += "-i \"" + file + ".srt\" ";
             }
             command += "-map 0:v -map 0:a? ";
             for (int i = 0; i < subtitleFiles.Length; i++)
@@ -75,7 +75,7 @@ namespace Observator
                 command += "-metadata:s:s:" + i + " title=\"" + subtitleNames[i] + "\" ";
             }
 
-            return command + videoName + ".mkv";
+            return command + "\"" + videoName + ".mkv\"";
         }
 
         private void AppendEmptySubstitleFile(string file)

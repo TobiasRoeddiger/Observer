@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Forms;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Windows.Media.Imaging;
-using System.Windows.Controls;
 using Microsoft.Win32;
 
 namespace Observator
@@ -338,38 +337,6 @@ namespace Observator
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
                 MinDistanceText.IsEnabled = true;
             }
-        }
-
-        private void TakeScreenshot()
-        {
-            Dispatcher.InvokeAsync(() =>
-            {
-                if (filePath == "" || filePath == null)
-                {
-                    return;
-                }
-
-                double screenLeft = 0;
-                double screenTop = 0;
-                double screenWidth = SystemParameters.PrimaryScreenWidth * 1.5;
-                double screenHeight = SystemParameters.PrimaryScreenHeight * 1.5;
-
-                using (Bitmap bmp = new Bitmap((int)screenWidth,
-                    (int)screenHeight))
-                {
-                    using (Graphics g = Graphics.FromImage(bmp))
-                    {
-                        String filename = "ScreenCapture-" + DateTime.Now.ToString("ddMMyyyy-hhmmss") + ".png";
-                        Opacity = .0;
-                        g.CopyFromScreen((int)screenLeft, (int)screenTop, 0, 0, bmp.Size);
-                        bmp.Save(LocationEntry.Text + "\\" + filename);
-                        Opacity = 1;
-                    }
-
-                }
-
-            });
-            
         }
 
         private void Settings_Closing(object sender, CancelEventArgs e)
