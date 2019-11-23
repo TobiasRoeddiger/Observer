@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using SharpAvi.Output;
 
 namespace Observator
@@ -100,6 +101,7 @@ namespace Observator
 
         public void Screenshot(byte[] Buffer)
         {
+            //Screen.AllScreens[0].DeviceName
             using (var BMP = new Bitmap(Params.Width, Params.Height))
             {
                 using (var g = Graphics.FromImage(BMP))

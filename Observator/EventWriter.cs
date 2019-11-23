@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -9,7 +10,7 @@ namespace Observator
         public enum InputEvent { Keyboard, MouseClick, MouseMove, Clipboard, Application, Print, Url };
         const int NumEvents = 7;
 
-        StopWatch stopWatch;
+        Stopwatch stopwatch = new Stopwatch();
         string filePath;
         int[] eventCounters;
         string timestamp;
@@ -20,9 +21,9 @@ namespace Observator
             this.filePath = filePath;
             this.timestamp = timestamp;
 
-            stopWatch = new StopWatch();
             eventCounters = Enumerable.Repeat(0, NumEvents).ToArray();
             CreateFiles();
+            stopwatch.Start();
         }
 
         public void Pause()
@@ -30,7 +31,7 @@ namespace Observator
             if (!isPaused)
             {
                 isPaused = true;
-                stopWatch.Pause();
+                stopwatch.Stop();
             }            
         }
 
@@ -39,7 +40,7 @@ namespace Observator
             if (isPaused)
             {
                 isPaused = false;
-                stopWatch.Resume();
+                stopwatch.Start();
             }            
         }
 
@@ -52,7 +53,7 @@ namespace Observator
         {
             if (!isPaused)
             {
-                TimeSpan timeSpan = stopWatch.getTimeDifference();
+                TimeSpan timeSpan = stopwatch.Elapsed;
                 string time = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
                 string nextTime = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds + 1, timeSpan.Milliseconds);
 
