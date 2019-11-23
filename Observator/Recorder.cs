@@ -15,6 +15,7 @@ namespace Observator
         IAviVideoStream videoStream;
         Thread screenThread;
         ManualResetEvent stopThread = new ManualResetEvent(false);
+        bool IsPaused = false;
 
         public Recorder(RecorderParams Params)
         {
@@ -34,12 +35,32 @@ namespace Observator
 
         public void Dispose()
         {
+            if (IsPaused) Resume();
+
             stopThread.Set();
             screenThread.Join();
 
             writer.Close();
 
             stopThread.Dispose();
+        }
+
+        public void Pause()
+        {
+            if (!IsPaused)
+            {
+                screenThread.Suspend();
+                IsPaused = true;
+            }
+        }
+
+        public void Resume()
+        {
+            if (IsPaused)
+            {
+                screenThread.Resume();
+                IsPaused = false;
+            }
         }
 
         void RecordScreen()
@@ -53,7 +74,14 @@ namespace Observator
             {
                 var timestamp = DateTime.Now;
 
-                Screenshot(buffer);
+                try
+                {
+                    Screenshot(buffer);
+                } 
+                catch (Exception e)
+                {
+
+                }
 
                 // Wait for the previous frame is written
                 videoWriteTask?.Wait();

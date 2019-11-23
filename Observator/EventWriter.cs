@@ -13,6 +13,7 @@ namespace Observator
         string filePath;
         int[] eventCounters;
         string timestamp;
+        bool isPaused = false;
 
         public EventWriter(string filePath, string timestamp)
         {
@@ -24,6 +25,24 @@ namespace Observator
             CreateFiles();
         }
 
+        public void Pause()
+        {
+            if (!isPaused)
+            {
+                isPaused = true;
+                stopWatch.Pause();
+            }            
+        }
+
+        public void Resume()
+        {
+            if (isPaused)
+            {
+                isPaused = false;
+                stopWatch.Resume();
+            }            
+        }
+
         public string[] GetEventNames()
         {
             return Enum.GetNames(typeof(InputEvent));
@@ -31,12 +50,15 @@ namespace Observator
 
         public void WriteEvent(InputEvent inputEvent, string message)
         {
-            TimeSpan timeSpan = stopWatch.getTimeDifference();
-            string time = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
-            string nextTime = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds + 1, timeSpan.Milliseconds);
+            if (!isPaused)
+            {
+                TimeSpan timeSpan = stopWatch.getTimeDifference();
+                string time = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+                string nextTime = ParseTime(timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds + 1, timeSpan.Milliseconds);
 
-            string[] lines = { IncrementAndGetEventCounter(inputEvent).ToString(), time + " --> " + nextTime, message, "" };
-            File.AppendAllLines(filePath + "\\" + GetEventNames()[(int)inputEvent] + timestamp + ".srt", lines);
+                string[] lines = { IncrementAndGetEventCounter(inputEvent).ToString(), time + " --> " + nextTime, message, "" };
+                File.AppendAllLines(filePath + "\\" + GetEventNames()[(int)inputEvent] + timestamp + ".srt", lines);
+            }
         }
 
         public string[] GetAllFiles()

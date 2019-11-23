@@ -20,6 +20,7 @@ namespace Observator
         string filePath;
         string timestamp = "";
         bool isRecording = false;
+        bool isPaused = false;
         int[] mousePosition;
         int minDistance = 20;
 
@@ -53,6 +54,7 @@ namespace Observator
             ClosingButton.Click += ClosingButton_Click;
             QuitButton.Click += QuitButton_Click;
             LocationEntry.Text = filePath;
+            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
 
             Hide();
 
@@ -261,6 +263,37 @@ namespace Observator
             }
         }
 
+        public void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+        {
+            if (e.Reason == SessionSwitchReason.SessionLock)
+            {
+                Pause();
+            } else if (e.Reason == SessionSwitchReason.SessionUnlock)
+            {
+                Resume();
+            }
+        }
+
+        private void Pause()
+        {
+            if (isRecording && !isPaused)
+            {
+                isPaused = true;
+                recorder.Pause();
+                eventWriter.Pause();
+            }
+        }
+
+        private void Resume()
+        {
+            if (isRecording && isPaused)
+            {
+                isPaused = false;
+                recorder.Resume();
+                eventWriter.Resume();
+            }
+        }
+
         private void StartRecording()
         {
             if (filePath == "" || filePath == null)
@@ -310,6 +343,7 @@ namespace Observator
             recorder.Dispose();
             recorder = null;
             isRecording = false;
+            isPaused = false;
             webServer.Stop();
             webServer = null;
 
