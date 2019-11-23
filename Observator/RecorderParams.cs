@@ -1,21 +1,23 @@
 ﻿using SharpAvi;
 using SharpAvi.Codecs;
 using SharpAvi.Output;
+using System;
 using System.Windows.Forms;
 
 namespace Observator
 {
     public class RecorderParams
     {
-        public RecorderParams(string filename, int FrameRate, FourCC Encoder, int Quality)
+        public RecorderParams(string filename, int FrameRate, FourCC Encoder, int Quality, int screen)
         {
             FileName = filename;
             FramesPerSecond = FrameRate;
             Codec = Encoder;
             this.Quality = Quality;
 
-            Height = Screen.PrimaryScreen.Bounds.Height;
-            Width = Screen.PrimaryScreen.Bounds.Width;
+            CurrentScreen = Screen.AllScreens[screen];
+            Height = CurrentScreen.Bounds.Height;
+            Width = CurrentScreen.Bounds.Width;
         }
 
         string FileName;
@@ -24,6 +26,7 @@ namespace Observator
 
         public int Height { get; private set; }
         public int Width { get; private set; }
+        public Screen CurrentScreen { get; private set; }
 
         public AviWriter CreateAviWriter()
         {

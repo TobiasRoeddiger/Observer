@@ -23,6 +23,7 @@ namespace Observator
         bool isPaused = false;
         int[] mousePosition;
         int minDistance = 20;
+        int currentScreen = 0;
 
         Recorder recorder;
         VideoConverter converter;
@@ -48,6 +49,14 @@ namespace Observator
                 filePath = Path.Combine(Environment.ExpandEnvironmentVariables("%userprofile%"), @"Videos\Observations");
             }
 
+            for (int i = 0; i < Screen.AllScreens.Length; i++)
+            {
+                ScreenBox.Items.Add("Display " + (i + 1));
+            }                
+
+            ScreenBox.SelectedIndex = currentScreen;
+
+            ScreenBox.SelectionChanged += ScreenBox_SelectedIndexChanged;
             SelectLocationButton.Click += SelectLocationButton_Click;
             TrayRecordButton.Click += TrayRecordButton_Click;
             SettingsButton.Click += SettingsButton_Click;
@@ -179,6 +188,11 @@ namespace Observator
                     }
                 }
             }
+        }
+
+        private void ScreenBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            currentScreen = ScreenBox.SelectedIndex;
         }
 
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
@@ -332,7 +346,7 @@ namespace Observator
             timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
             eventWriter = new EventWriter(filePath, timestamp);            
 
-            recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
+            recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70, currentScreen));
 
             webServer = new WebServer(new string[] { "http://localhost:8080/url/" }, eventWriter);
 

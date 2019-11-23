@@ -81,10 +81,14 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0, 10, 0, 10">
             <Label Content="Minimal Tracking Distance: " FontWeight="Bold"></Label>
-            <TextBox x:Name="MinDistanceText" 
+            <TextBox Margin="10, 0, 10, 0" x:Name="MinDistanceText" 
                      VerticalContentAlignment="Center" 
                      HorizontalContentAlignment="Center" 
                      Width="32">20</TextBox>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10">
+            <Label Content="Screen to Capture: " FontWeight="Bold"></Label>
+            <ComboBox Margin="10, 0, 10, 0" Name="ScreenBox"/>
         </StackPanel>
     </StackPanel>
     

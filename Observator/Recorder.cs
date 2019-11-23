@@ -101,12 +101,11 @@ namespace Observator
 
         public void Screenshot(byte[] Buffer)
         {
-            //Screen.AllScreens[0].DeviceName
             using (var BMP = new Bitmap(Params.Width, Params.Height))
             {
                 using (var g = Graphics.FromImage(BMP))
                 {
-                    g.CopyFromScreen(Point.Empty, Point.Empty, new Size(Params.Width, Params.Height), CopyPixelOperation.SourceCopy);
+                    g.CopyFromScreen(new Point(Params.CurrentScreen.Bounds.X, Params.CurrentScreen.Bounds.Y), Point.Empty, Params.CurrentScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
 
                     g.Flush();
 
