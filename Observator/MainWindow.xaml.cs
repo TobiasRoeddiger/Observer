@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using System.Windows.Media;
 
 namespace Observator
 {
@@ -25,6 +26,8 @@ namespace Observator
         int minDistance = 20;
         int currentScreen = 0;
 
+        TransparentWindow transparentWindow;
+
         Recorder recorder;
         VideoConverter converter;
         EventWriter eventWriter;
@@ -36,6 +39,8 @@ namespace Observator
         private readonly ClipboardWatcher clipboardWatcher;
         private readonly MouseWatcher mouseWatcher;
         private readonly PrintWatcher printWatcher;
+
+        public object Graphics { get; private set; }
 
         public MainWindow()
         {
@@ -164,7 +169,29 @@ namespace Observator
             } catch (Exception e)
             {
                 NotifyIcon.ShowBalloonTip("Exception", e.Message, BalloonIcon.Info);
-            }            
+            }
+        }
+
+        private void drawScreenBorder()
+        {
+            transparentWindow = new TransparentWindow();
+            transparentWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            double resHeight = Screen.PrimaryScreen.Bounds.Height;
+            double actualHeight = SystemParameters.PrimaryScreenHeight;
+            double dpi = resHeight / actualHeight;
+
+            Rectangle viewport = Screen.AllScreens[currentScreen].Bounds;
+            transparentWindow.Top = viewport.Y / dpi;
+            transparentWindow.Left = viewport.X / dpi;
+            transparentWindow.Width = viewport.Width / dpi;
+            transparentWindow.Height = viewport.Height / dpi;
+            transparentWindow.Show();
+        }
+
+        private void removeScreenBorder()
+        {
+            transparentWindow.Close();
         }
 
         private void RegisterChromeExtension()
@@ -193,6 +220,8 @@ namespace Observator
         private void ScreenBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             currentScreen = ScreenBox.SelectedIndex;
+            removeScreenBorder();
+            drawScreenBorder();
         }
 
         private void SelectLocationButton_Click(object sender, RoutedEventArgs e)
@@ -233,6 +262,7 @@ namespace Observator
         private void SettingsButton_Click(object sender, EventArgs e)
         {
             Show();
+            drawScreenBorder();
         }
 
         private void ClosingButton_Click(object sender, EventArgs e)
@@ -351,10 +381,13 @@ namespace Observator
             webServer = new WebServer(new string[] { "http://localhost:8080/url/" }, eventWriter);
 
             UpdateRecordingUI();
+            drawScreenBorder();
         }
 
         private void StopRecording()
         {
+            removeScreenBorder();
+
             recorder.Dispose();
             recorder = null;
             isRecording = false;
@@ -388,12 +421,6 @@ namespace Observator
             }
         }
 
-        private void Settings_Closing(object sender, CancelEventArgs e)
-        {
-            e.Cancel = true;
-            Hide();
-        }
-
         private void CleanUp()
         {
             keyboardWatcher.Stop();
@@ -420,6 +447,7 @@ namespace Observator
 
         protected override void OnClosing(CancelEventArgs e)
         {
+            removeScreenBorder();
             e.Cancel = true;
             Hide();
         }
