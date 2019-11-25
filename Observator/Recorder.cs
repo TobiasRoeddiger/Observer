@@ -106,8 +106,6 @@ namespace Observator
                 using (var g = Graphics.FromImage(BMP))
                 {
                     g.CopyFromScreen(new Point(Params.CurrentScreen.Bounds.X, Params.CurrentScreen.Bounds.Y), Point.Empty, Params.CurrentScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
-                    Console.WriteLine(Params.CurrentScreen.Bounds.Top + "  " + Params.CurrentScreen.Bounds.Left);
-                    Console.WriteLine((Params.CurrentScreen.Bounds.Bottom - Params.CurrentScreen.Bounds.Top) + "  " + (Params.CurrentScreen.Bounds.Right - Params.CurrentScreen.Bounds.Left));
 
                     g.Flush();
 

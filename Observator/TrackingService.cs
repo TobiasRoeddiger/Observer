@@ -68,7 +68,7 @@ namespace Observator
 
                 int vkCode = Marshal.ReadInt32(lParam);
 
-                Console.WriteLine((vkCode));
+                //Console.WriteLine((vkCode));
                 OnKeyPressed?.Invoke(null, vkCode);
                 // TODO: convert keycode to letter etc.
             }
