@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Observator"
         mc:Ignorable="d"
         Title="TransparentWindow" AllowsTransparency="True" WindowStyle="None" Background="Transparent" 
-        ShowInTaskbar="True">
+        ShowInTaskbar="False" Topmost="True">
     <Border BorderBrush="Red" BorderThickness="2">
         <Grid>
 

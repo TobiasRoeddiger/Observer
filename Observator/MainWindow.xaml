@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:Observator"
         mc:Ignorable="d"
         Title="Observator" Width="550" SizeToContent="Height"
-        ResizeMode="NoResize" ShowInTaskbar="False">
+        ResizeMode="NoResize" ShowInTaskbar="True">
     <StackPanel Orientation="Vertical">
         <tb:TaskbarIcon x:Name="NotifyIcon" IconSource="Resources/Icon.ico" ToolTipText="Observator" PopupActivation="LeftOrRightClick">
           <tb:TaskbarIcon.TrayPopup>

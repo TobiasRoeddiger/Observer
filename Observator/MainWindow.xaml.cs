@@ -373,7 +373,7 @@ namespace Observator
             mousePosition = new int[] { 0, 0 };
             isRecording = true;
 
-            timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss");
+            timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss-ffffff");
             eventWriter = new EventWriter(filePath, timestamp);            
 
             recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70, currentScreen));
