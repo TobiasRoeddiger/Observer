@@ -261,8 +261,11 @@ namespace Observator
 
         private void SettingsButton_Click(object sender, EventArgs e)
         {
-            Show();
-            drawScreenBorder();
+            if (!isRecording)
+            {
+                Show();
+                drawScreenBorder();
+            }            
         }
 
         private void ClosingButton_Click(object sender, EventArgs e)
@@ -272,38 +275,34 @@ namespace Observator
 
         private void QuitButton_Click(object sender, EventArgs e)
         {
-            string msg;
-            if (isRecording)
+            if (!isRecording)
             {
-                msg = "Video is being recorded. Close without saving?";
-            } else
-            {
-                msg = "Are you sure to close the app?";
-            }
+                string msg = "Are you sure to close the app?";
 
-            Window window = new Window()
-            {
-                Visibility = Visibility.Hidden,
-                AllowsTransparency = true,
-                Background = System.Windows.Media.Brushes.Transparent,
-                WindowStyle = WindowStyle.None,
-                ShowInTaskbar = false
-            };
+                Window window = new Window()
+                {
+                    Visibility = Visibility.Hidden,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    WindowStyle = WindowStyle.None,
+                    ShowInTaskbar = false
+                };
 
-            window.Show();
+                window.Show();
 
-            MessageBoxResult result =
-              System.Windows.MessageBox.Show(
-                msg,
-                "Observator",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                MessageBoxResult result =
+                  System.Windows.MessageBox.Show(
+                    msg,
+                    "Observator",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
 
-            window.Close();
-            if (result == MessageBoxResult.Yes)
-            {
-                CleanUp();
-                System.Windows.Application.Current.Shutdown();
+                window.Close();
+                if (result == MessageBoxResult.Yes)
+                {
+                    CleanUp();
+                    System.Windows.Application.Current.Shutdown();
+                }
             }
         }
 
@@ -372,6 +371,7 @@ namespace Observator
             NotifyIcon.HideBalloonTip();
             mousePosition = new int[] { 0, 0 };
             isRecording = true;
+            UpdateRecordingUI();
 
             timestamp = DateTime.Now.ToString("ddMMyyyy-hhmmss-ffffff");
             eventWriter = new EventWriter(filePath, timestamp);            
@@ -379,8 +379,6 @@ namespace Observator
             recorder = new Recorder(new RecorderParams(filePath + "\\Record" + timestamp + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70, currentScreen));
 
             webServer = new WebServer(new string[] { "http://localhost:8080/url/" }, eventWriter);
-
-            UpdateRecordingUI();
             drawScreenBorder();
         }
 
@@ -414,10 +412,14 @@ namespace Observator
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/stop.png", UriKind.Relative));
                 MinDistanceText.IsEnabled = false;
+                SettingsButton.IsEnabled = false;
+                QuitButton.IsEnabled = false;
             } else
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
                 MinDistanceText.IsEnabled = true;
+                SettingsButton.IsEnabled = true;
+                QuitButton.IsEnabled = true;
             }
         }
 
