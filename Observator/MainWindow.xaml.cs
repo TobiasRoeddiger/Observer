@@ -414,12 +414,16 @@ namespace Observator
                 MinDistanceText.IsEnabled = false;
                 SettingsButton.IsEnabled = false;
                 QuitButton.IsEnabled = false;
+                ScreenBox.IsEnabled = false;
+                SelectLocationButton.IsEnabled = false;
             } else
             {
                 RecordButtonImage.Source = new BitmapImage(new Uri("/Resources/play.png", UriKind.Relative));
                 MinDistanceText.IsEnabled = true;
                 SettingsButton.IsEnabled = true;
                 QuitButton.IsEnabled = true;
+                ScreenBox.IsEnabled = true;
+                SelectLocationButton.IsEnabled = true;
             }
         }
 
