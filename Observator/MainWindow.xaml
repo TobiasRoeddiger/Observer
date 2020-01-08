@@ -6,7 +6,7 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:Observator"
         mc:Ignorable="d"
-        Title="Observer" Height="310" Width="550">
+        Title="Observer" Height="340" Width="550">
     <StackPanel Orientation="Vertical">
         <tb:TaskbarIcon x:Name="NotifyIcon" IconSource="Resources/Icon.ico" ToolTipText="Observer">
           <tb:TaskbarIcon.TrayPopup>
@@ -58,12 +58,17 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,0,0.333,0">
             <Label Content="Ergebnis Speicherort:" FontWeight="Bold"/>
             <TextBox x:Name="LocationEntry" IsEnabled="False" Margin="10, 0, 10, 0" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Width="247"></TextBox>
-            <Button x:Name="SelectLocationButton" Content="Dursuchen" FontWeight="Bold" Margin="10, 0" Padding="5, 0" HorizontalAlignment="Right"/>
+            <Button x:Name="SelectLocationButton" Content="Durchsuchen" FontWeight="Bold" Margin="10, 0" Padding="5, 0" HorizontalAlignment="Right"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0, 10, 0, 0">
             <Label Content="Screen Scale Factor: " FontWeight="Bold">
             </Label>
             <TextBox VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Width="32" >1.5</TextBox>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0, 10, 0, 0">
+            <Label Content="Mouse-tracking activated: " FontWeight="Bold">
+            </Label>
+            <CheckBox x:Name="MouseTracking" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Width="40"></CheckBox>
         </StackPanel>
         <StackPanel Orientation="Horizontal">
             <Button x:Name="RecordStartButton" Content="Aufnahme beginnen" Margin="10" FontWeight="Bold" HorizontalAlignment="Left" Padding="10"></Button>

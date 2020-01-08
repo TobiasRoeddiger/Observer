@@ -139,8 +139,7 @@ namespace Observator
             isRecording = true;
 
             videoName = filePath + "\\Record" + DateTime.Now.ToString("ddMMyyyy-hhmmss");
-            recorder = new Recorder(new RecorderParams(videoName + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
-
+            recorder = new Recorder(this.MouseTracking.IsChecked ?? false, new RecorderParams(videoName + ".avi", 10, SharpAvi.KnownFourCCs.Codecs.MotionJpeg, 70));
             UpdateRecordButtons();
         }
 
